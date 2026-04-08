@@ -94,7 +94,7 @@ services:
 
     environment:
       spring.security.oauth2.resourceserver.jwt.issuer-uri: http://localhost:9020
-      spring.security.oauth2.resourceserver.jwt.jwk-set-uri: http://localhost:9020/oauth2/jwks
+      spring.security.oauth2.resourceserver.jwt.jwk-set-uri: http://oauth2-web:9020/oauth2/jwks
       
       io.u2ware.common.stomp.publishing: /topic/sessions
       
