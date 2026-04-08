@@ -1,0 +1,116 @@
+
+name: examples 
+
+services:
+
+  ####################################################################
+  # oauth2-db
+  ######################################################################
+  oauth2-db:
+
+    image: ghcr.io/u2waremanager/io.u2ware.examples.env.postgres:16.4-alpine3.20
+
+    container_name: oauth2-db
+
+    ports:
+      - "5432:5432"
+
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_USER: oauth2-db
+      POSTGRES_PASSWORD: oauth2-db
+      POSTGRES_DB: oauth2-db
+
+  ####################################################################
+  # oauth2-web
+  ####################################################################
+  oauth2-web:
+    image: ghcr.io/u2waremanager/io.u2ware.product.oauth2-server:3.5.11
+
+    container_name: oauth2-web
+
+    # volumes:
+    #   - <....>:/var/lib/u2ware/logs
+
+    ports:
+      - "9020:9020"
+
+    environment:
+      server.port: 9020
+      spring.security.user.name: oauth2-web
+      spring.security.user.password: oauth2-web
+
+      spring.jpa.hibernate.ddl-auto: update
+      spring.jpa.properties.hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
+      
+      spring.datasource.driver-class-name: org.postgresql.Driver
+      spring.datasource.url: jdbc:postgresql://oauth2-db:5432/oauth2-db
+      spring.datasource.username: oauth2-db
+      spring.datasource.password: oauth2-db
+
+      io.u2ware.common.oauth2.clients.example-backend: http://examples-backend:8080/oauth2/token
+
+    healthcheck:
+      test: ["CMD", "ls", "-al"]
+      interval: 60s 
+      timeout: 3s 
+      retries: 1 
+      start_period: 3s
+
+
+
+  ####################################################################
+  # stomp-mq
+  ####################################################################
+  stomp-mq:
+    image: ghcr.io/u2waremanager/io.u2ware.examples.env.rabbitmq:3-management
+
+    container_name: stomp-mq
+
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+      - "61613:61613"
+
+    environment:
+      RABBITMQ_DEFAULT_USER: stomp-mq
+      RABBITMQ_DEFAULT_PASS: stomp-mq
+
+
+
+  ####################################################################
+  # stomp-server
+  ####################################################################
+  stomp-web:
+    image: ghcr.io/u2waremanager/io.u2ware.product.stomp-server:3.5.11
+
+    container_name: stomp-web
+
+    # volumes:
+    #   - <....>:/var/lib/u2ware/logs
+
+    ports:
+      - "9030:8080"
+
+    environment:
+      spring.security.oauth2.resourceserver.jwt.issuer-uri: http://localhost:9020
+      spring.security.oauth2.resourceserver.jwt.jwk-set-uri: http://oauth2-web:9020/oauth2/jwks
+      
+      io.u2ware.common.stomp.publishing: /topic/sessions
+      
+      io.u2ware.common.stomp.broker.host: stomp-mq
+      io.u2ware.common.stomp.broker.port: 61613
+      io.u2ware.common.stomp.broker.username: stomp-mq
+      io.u2ware.common.stomp.broker.password: stomp-mq
+
+    depends_on:
+      oauth2-web :
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "ls", "-al"]
+      interval: 60s 
+      timeout: 3s 
+      retries: 1 
+      start_period: 3s
+
