@@ -30,12 +30,15 @@ public class ApplicationStompConfig {
 
     @PostMapping("/oauth2/token")
     public @ResponseBody ResponseEntity<Object> oauth2Token(@RequestBody String token) {
-        
+
         try{
             Jwt jwt = JoseKeyEncryptor.decrypt(jwtDecoder, ()->{return token;});
             logger.info(jwt.getSubject());
 
-            String url = UriComponentsBuilder.fromUriString(websocketStompProperties.getUrl()).queryParam("access_token", token).toUriString();
+            String url = UriComponentsBuilder
+                .fromUriString(websocketStompProperties.getUrl())
+                .queryParam("access_token", token).
+                toUriString();
             logger.info(url);
 
             websocketStompProperties.setUrl(url);
